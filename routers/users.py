@@ -1,10 +1,10 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-app = FastAPI()
+router = APIRouter(prefix="/users",
+                   tags=["users"],
+                   responses={404: {"message": "Not found"}})
 # entidad tipo users
-
-
 class User(BaseModel):
     id: int
     name: str
@@ -20,30 +20,30 @@ users_fake_db = [
 ]
 
 
-@app.get("/users/")
+@router.get("/users")
 async def users():
     return users_fake_db
 
 
-@app.get("/user/{id}/")
+@router.get("/user/{id}/")
 async def user(id: int):
     return search_user(id)
 
 
-@app.get("/user/")
+@router.get("/user")
 async def user(id: int):
     return search_user(id)
 
 
-@app.post("/user/")
+@router.post("/user", response_model=User,status_code=201)
 async def user(user: User):
     if type(search_user(user.id)) == User:
-        return {"error": "el usario ya existe"}
+        raise HTTPException(status_code=204, detail="El usuario ya existe")
     
     users_fake_db.append(user)
     return user
 
-@app.put("/user/")
+@router.put("/user")
 async def user(user: User):
     
     found = False
@@ -58,7 +58,7 @@ async def user(user: User):
     
     return user
 
-@app.delete("/user/{id}")
+@router.delete("/user/{id}")
 async def user(id: int):
     
     found = False
@@ -68,8 +68,8 @@ async def user(id: int):
             del users_fake_db[index]
             found = True
         
-        if not found:
-            return {"error": "User not delete"}
+    if not found:
+        return {"error": "User not delete"}
 
 
 def search_user(id: int):
